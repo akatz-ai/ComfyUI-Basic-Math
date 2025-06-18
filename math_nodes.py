@@ -1,4 +1,5 @@
 import math
+import re
 from .tools import VariantSupport, SmartType
 from .base_node import NODE_POSTFIX, ArithmeticNode, BooleanNode, ConversionNode, UtilityNode, ConstantsNode, PrimitiveNode
 
@@ -98,6 +99,29 @@ class BooleanInput(PrimitiveNode):
         return (value,)
 
 @VariantSupport()
+class StringInput(PrimitiveNode):
+    """
+    Output a string value.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": ("STRING", {"default": "",}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("value",)
+    FUNCTION = "output"
+
+    def output(self, value):
+        return (value,)
+
+@VariantSupport()
 class IntToType(ConversionNode):
     """
     Convert an integer to various types.
@@ -168,6 +192,41 @@ class FloatToType(ConversionNode):
             return (str(value),)
         elif output_type == "BOOLEAN":
             return (bool(value),)
+
+@VariantSupport()
+class ToBool(ConversionNode):
+    """
+    Convert any value to boolean with optional invert.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "value": ("*",),
+            },
+            "optional": {
+                "invert": ("BOOLEAN", {"default": False}),
+            },
+        }
+
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "convert"
+
+    def convert(self, value, invert=False):
+        try:
+            result = bool(value)
+        except:
+            # If conversion fails, assume it's something (True)
+            result = True
+
+        if invert:
+            result = not result
+
+        return (result,)
 
 @VariantSupport()
 class BasicMath(ArithmeticNode):
@@ -629,6 +688,50 @@ class FloatComparison(BooleanNode):
             return (a >= b,)
 
 @VariantSupport()
+class StringComparison(BooleanNode):
+    """
+    Compare and manipulate strings with various operations.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "a": ("STRING", {"multiline": False}),
+                "b": ("STRING", {"multiline": False}),
+                "operation": (["a == b", "a != b", "a IN b", "a MATCH REGEX(b)", "a BEGINSWITH b", "a ENDSWITH b"],),
+                "case_sensitive": ("BOOLEAN", {"default": True}),
+            },
+        }
+
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "compare"
+
+    def compare(self, a, b, operation, case_sensitive):
+        if not case_sensitive:
+            a = a.lower()
+            b = b.lower()
+
+        if operation == "a == b":
+            return (a == b,)
+        elif operation == "a != b":
+            return (a != b,)
+        elif operation == "a IN b":
+            return (a in b,)
+        elif operation == "a MATCH REGEX(b)":
+            try:
+                return (re.match(b, a) is not None,)
+            except:
+                return (False,)
+        elif operation == "a BEGINSWITH b":
+            return (a.startswith(b),)
+        elif operation == "a ENDSWITH b":
+            return (a.endswith(b),)
+
+@VariantSupport()
 class BooleanLogic(BooleanNode):
     """
     Boolean logic operations.
@@ -696,8 +799,10 @@ MATH_NODE_CLASS_MAPPINGS = {
     "FloatInput": FloatInput,
     "PreciseFloatInput": PreciseFloatInput,
     "BooleanInput": BooleanInput,
+    "StringInput": StringInput,
     "IntToType": IntToType,
     "FloatToType": FloatToType,
+    "ToBool": ToBool,
     "BasicMath": BasicMath,
     "IntMath": IntMath,
     "UnaryMath": UnaryMath,
@@ -709,6 +814,7 @@ MATH_NODE_CLASS_MAPPINGS = {
     "NumberComparison": NumberComparison,
     "IntegerComparison": IntegerComparison,
     "FloatComparison": FloatComparison,
+    "StringComparison": StringComparison,
     "BooleanLogic": BooleanLogic,
     "BooleanUnary": BooleanUnary,
 }
@@ -718,8 +824,10 @@ MATH_NODE_DISPLAY_NAME_MAPPINGS = {
     "FloatInput": f"Float {NODE_POSTFIX}",
     "PreciseFloatInput": f"Precise Float {NODE_POSTFIX}",
     "BooleanInput": f"Boolean {NODE_POSTFIX}",
+    "StringInput": f"String {NODE_POSTFIX}",
     "IntToType": f"Int to Type {NODE_POSTFIX}",
     "FloatToType": f"Float to Type {NODE_POSTFIX}",
+    "ToBool": f"To Bool {NODE_POSTFIX}",
     "BasicMath": f"Basic Math {NODE_POSTFIX}",
     "IntMath": f"Int Math {NODE_POSTFIX}",
     "UnaryMath": f"Unary Math {NODE_POSTFIX}",
@@ -731,6 +839,7 @@ MATH_NODE_DISPLAY_NAME_MAPPINGS = {
     "NumberComparison": f"Number Comparison {NODE_POSTFIX}",
     "IntegerComparison": f"Integer Comparison {NODE_POSTFIX}",
     "FloatComparison": f"Float Comparison {NODE_POSTFIX}",
+    "StringComparison": f"String Comparison {NODE_POSTFIX}",
     "BooleanLogic": f"Boolean Logic {NODE_POSTFIX}",
     "BooleanUnary": f"Boolean Unary {NODE_POSTFIX}",
 }
