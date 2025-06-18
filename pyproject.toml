@@ -1,0 +1,13 @@
+[project]
+name = "comfyui-basic-math"
+description = "Custom nodes for performing basic math operations"
+version = "0.0.1"
+license = { file = "LICENSE.txt" }
+
+[project.urls]
+Repository = "https://github.com/akatz-ai/ComfyUI-Basic-Math"
+
+[tool.comfy]
+PublisherId = "akatz"
+DisplayName = "ComfyUI-Basic-Math"
+Icon = "https://i.imgur.com/aiqQI7U.png"
