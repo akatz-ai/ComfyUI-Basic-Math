@@ -510,6 +510,125 @@ class NumberRange(UtilityNode):
             return (min_value < value < max_value,)
 
 @VariantSupport()
+class NumberComparison(BooleanNode):
+    """
+    Compare two numbers and return a boolean result.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "a": (NUMBER, {"default": 0.0}),
+                "b": (NUMBER, {"default": 0.0}),
+                "operation": (["==", "!=", "<", ">", "<=", ">="],),
+            },
+        }
+
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "compare"
+
+    def compare(self, a, b, operation):
+        if operation == "==":
+            return (a == b,)
+        elif operation == "!=":
+            return (a != b,)
+        elif operation == "<":
+            return (a < b,)
+        elif operation == ">":
+            return (a > b,)
+        elif operation == "<=":
+            return (a <= b,)
+        elif operation == ">=":
+            return (a >= b,)
+
+@VariantSupport()
+class IntegerComparison(BooleanNode):
+    """
+    Compare two integers and return a boolean result.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "a": ("INT", {"default": 0, "min": -0xffffffffffffffff, "max": 0xffffffffffffffff, "step": 1}),
+                "b": ("INT", {"default": 0, "min": -0xffffffffffffffff, "max": 0xffffffffffffffff, "step": 1}),
+                "operation": (["==", "!=", "<", ">", "<=", ">="],),
+            },
+        }
+
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "compare"
+
+    def compare(self, a, b, operation):
+        if operation == "==":
+            return (a == b,)
+        elif operation == "!=":
+            return (a != b,)
+        elif operation == "<":
+            return (a < b,)
+        elif operation == ">":
+            return (a > b,)
+        elif operation == "<=":
+            return (a <= b,)
+        elif operation == ">=":
+            return (a >= b,)
+
+@VariantSupport()
+class FloatComparison(BooleanNode):
+    """
+    Compare two floats and return a boolean result.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "a": ("FLOAT", {"default": 0.0, "min": -999999999999.0, "max": 999999999999.0, "step": 0.001}),
+                "b": ("FLOAT", {"default": 0.0, "min": -999999999999.0, "max": 999999999999.0, "step": 0.001}),
+                "operation": (["==", "!=", "<", ">", "<=", ">="],),
+            },
+            "optional": {
+                "tolerance": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.0001}),
+            },
+        }
+
+    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "compare"
+
+    def compare(self, a, b, operation, tolerance=0.0):
+        # Handle floating point comparison with optional tolerance
+        if tolerance > 0 and operation in ["==", "!="]:
+            equal = abs(a - b) <= tolerance
+            if operation == "==":
+                return (equal,)
+            else:  # !=
+                return (not equal,)
+        
+        if operation == "==":
+            return (a == b,)
+        elif operation == "!=":
+            return (a != b,)
+        elif operation == "<":
+            return (a < b,)
+        elif operation == ">":
+            return (a > b,)
+        elif operation == "<=":
+            return (a <= b,)
+        elif operation == ">=":
+            return (a >= b,)
+
+@VariantSupport()
 class BooleanLogic(BooleanNode):
     """
     Boolean logic operations.
@@ -587,6 +706,9 @@ MATH_NODE_CLASS_MAPPINGS = {
     "NumberClamp": NumberClamp,
     "NumberLerp": NumberLerp,
     "NumberRange": NumberRange,
+    "NumberComparison": NumberComparison,
+    "IntegerComparison": IntegerComparison,
+    "FloatComparison": FloatComparison,
     "BooleanLogic": BooleanLogic,
     "BooleanUnary": BooleanUnary,
 }
@@ -606,6 +728,9 @@ MATH_NODE_DISPLAY_NAME_MAPPINGS = {
     "NumberClamp": f"Number Clamp {NODE_POSTFIX}",
     "NumberLerp": f"Number Lerp {NODE_POSTFIX}",
     "NumberRange": f"Number Range {NODE_POSTFIX}",
+    "NumberComparison": f"Number Comparison {NODE_POSTFIX}",
+    "IntegerComparison": f"Integer Comparison {NODE_POSTFIX}",
+    "FloatComparison": f"Float Comparison {NODE_POSTFIX}",
     "BooleanLogic": f"Boolean Logic {NODE_POSTFIX}",
     "BooleanUnary": f"Boolean Unary {NODE_POSTFIX}",
 }
