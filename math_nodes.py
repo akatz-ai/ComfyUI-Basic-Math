@@ -1,10 +1,11 @@
 import math
 import re
-from .tools import VariantSupport, SmartType
+from .tools import VariantSupport, SmartType, ByPassTypeTuple, any_type
 from .base_node import NODE_POSTFIX, ArithmeticNode, BooleanNode, ConversionNode, UtilityNode, ConstantsNode, PrimitiveNode
 
 # Create a NUMBER type that accepts both INT and FLOAT
 NUMBER = SmartType("INT,FLOAT")
+ANY=SmartType("INT,FLOAT,STRING,BOOLEAN")
 
 @VariantSupport()
 class IntegerInput(PrimitiveNode):
@@ -23,7 +24,7 @@ class IntegerInput(PrimitiveNode):
         }
 
     RETURN_TYPES = ("INT",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("INT",)
     FUNCTION = "output"
 
     def output(self, value):
@@ -46,7 +47,7 @@ class FloatInput(PrimitiveNode):
         }
 
     RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("FLOAT",)
     FUNCTION = "output"
 
     def output(self, value):
@@ -69,7 +70,7 @@ class PreciseFloatInput(PrimitiveNode):
         }
 
     RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("FLOAT",)
     FUNCTION = "output"
 
     def output(self, value):
@@ -92,7 +93,7 @@ class BooleanInput(PrimitiveNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "output"
 
     def output(self, value):
@@ -115,16 +116,17 @@ class StringInput(PrimitiveNode):
         }
 
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("STRING",)
     FUNCTION = "output"
 
     def output(self, value):
         return (value,)
 
+
 @VariantSupport()
-class IntToType(ConversionNode):
+class ToInt(ConversionNode):
     """
-    Convert an integer to various types.
+    Convert any value to integer.
     """
     def __init__(self):
         pass
@@ -133,65 +135,87 @@ class IntToType(ConversionNode):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": ("INT", {"default": 0, "min": -0xffffffffffffffff, "max": 0xffffffffffffffff, "step": 1}),
-                "output_type": (["INT", "FLOAT", "STRING", "BOOLEAN"],),
-            },
-        }
-
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("value",)
-    FUNCTION = "convert"
-
-    def convert(self, value, output_type):
-        if output_type == "INT":
-            return (value,)
-        elif output_type == "FLOAT":
-            return (float(value),)
-        elif output_type == "STRING":
-            return (str(value),)
-        elif output_type == "BOOLEAN":
-            return (bool(value),)
-
-@VariantSupport()
-class FloatToType(ConversionNode):
-    """
-    Convert a float to various types.
-    """
-    def __init__(self):
-        pass
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "value": ("FLOAT", {"default": 0.0, "min": -999999999999.0, "max": 999999999999.0, "step": 0.001}),
-                "output_type": (["INT", "FLOAT", "STRING", "BOOLEAN"],),
+                "any": (any_type,),
             },
             "optional": {
                 "round_method": (["round", "floor", "ceil", "trunc"], {"default": "round"}),
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("value",)
+    RETURN_TYPES = ("INT",)
+    RETURN_NAMES = ("INT",)
     FUNCTION = "convert"
 
-    def convert(self, value, output_type, round_method="round"):
-        if output_type == "INT":
+    def convert(self, any, round_method="round"):
+        try:
+            # Try to convert to float first, then to int
+            if isinstance(any, (int, float)):
+                float_val = float(any)
+            else:
+                float_val = float(str(any))
+            
             if round_method == "round":
-                return (round(value),)
+                return (round(float_val),)
             elif round_method == "floor":
-                return (math.floor(value),)
+                return (math.floor(float_val),)
             elif round_method == "ceil":
-                return (math.ceil(value),)
+                return (math.ceil(float_val),)
             elif round_method == "trunc":
-                return (math.trunc(value),)
-        elif output_type == "FLOAT":
-            return (value,)
-        elif output_type == "STRING":
-            return (str(value),)
-        elif output_type == "BOOLEAN":
-            return (bool(value),)
+                return (math.trunc(float_val),)
+        except:
+            return (0,)
+
+@VariantSupport()
+class ToFloat(ConversionNode):
+    """
+    Convert any value to float.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "any": (any_type,),
+            },
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("FLOAT",)
+    FUNCTION = "convert"
+
+    def convert(self, any):
+        try:
+            if isinstance(any, (int, float)):
+                return (float(any),)
+            else:
+                return (float(str(any)),)
+        except:
+            return (0.0,)
+
+@VariantSupport()
+class ToString(ConversionNode):
+    """
+    Convert any value to string.
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "any": (any_type,),   
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("STRING",)
+    FUNCTION = "convert"
+
+    def convert(self, any):
+        return (str(any),)
 
 @VariantSupport()
 class ToBool(ConversionNode):
@@ -205,7 +229,7 @@ class ToBool(ConversionNode):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "value": ("*",),
+                "any": (any_type,),
             },
             "optional": {
                 "invert": ("BOOLEAN", {"default": False}),
@@ -213,12 +237,12 @@ class ToBool(ConversionNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "convert"
 
-    def convert(self, value, invert=False):
+    def convert(self, any, invert=False):
         try:
-            result = bool(value)
+            result = bool(any)
         except:
             # If conversion fails, assume it's something (True)
             result = True
@@ -246,9 +270,10 @@ class BasicMath(ArithmeticNode):
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("result",)
+    RETURN_TYPES = (NUMBER,)
+    RETURN_NAMES = ("NUMBER",)
     FUNCTION = "calculate"
+    OUTPUT_IS_LIST = (False,)
 
     def calculate(self, a, b, operation):
         # Determine if we should return int or float based on input types and operation
@@ -311,7 +336,7 @@ class IntMath(ArithmeticNode):
         }
 
     RETURN_TYPES = ("INT",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("INT",)
     FUNCTION = "calculate"
 
     def calculate(self, a, b, operation):
@@ -366,9 +391,10 @@ class UnaryMath(ArithmeticNode):
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("result",)
+    RETURN_TYPES = (NUMBER,)
+    RETURN_NAMES = ("NUMBER",)
     FUNCTION = "calculate"
+    OUTPUT_IS_LIST = (False,)
 
     def calculate(self, value, operation):
         # Determine return type based on operation and input
@@ -434,7 +460,7 @@ class MathConstants(ConstantsNode):
         }
 
     RETURN_TYPES = ("FLOAT",)
-    RETURN_NAMES = ("value",)
+    RETURN_NAMES = ("FLOAT",)
     FUNCTION = "get_constant"
 
     def get_constant(self, constant):
@@ -466,9 +492,10 @@ class NumberRound(UtilityNode):
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("rounded",)
+    RETURN_TYPES = ("FLOAT",)
+    RETURN_NAMES = ("FLOAT",)
     FUNCTION = "round_number"
+    OUTPUT_IS_LIST = (False,)
 
     def round_number(self, value, decimals):
         result = round(value, decimals)
@@ -496,9 +523,10 @@ class NumberClamp(UtilityNode):
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("clamped",)
+    RETURN_TYPES = (NUMBER,)
+    RETURN_NAMES = ("NUMBER",)
     FUNCTION = "clamp"
+    OUTPUT_IS_LIST = (False,)
 
     def clamp(self, value, min_value, max_value):
         result = max(min_value, min(max_value, value))
@@ -526,9 +554,10 @@ class NumberLerp(UtilityNode):
             },
         }
 
-    RETURN_TYPES = ("*",)
-    RETURN_NAMES = ("result",)
+    RETURN_TYPES = (NUMBER,)
+    RETURN_NAMES = ("NUMBER",)
     FUNCTION = "lerp"
+    OUTPUT_IS_LIST = (False,)
 
     def lerp(self, a, b, t):
         result = a + t * (b - a)
@@ -540,7 +569,7 @@ class NumberLerp(UtilityNode):
             return (float(result),)
 
 @VariantSupport()
-class NumberRange(UtilityNode):
+class NumberInRange(UtilityNode):
     """
     Check if a number is within a range.
     """
@@ -559,7 +588,7 @@ class NumberRange(UtilityNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("in_range",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "check_range"
 
     def check_range(self, value, min_value, max_value, inclusive):
@@ -587,7 +616,7 @@ class NumberComparison(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "compare"
 
     def compare(self, a, b, operation):
@@ -623,7 +652,7 @@ class IntegerComparison(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "compare"
 
     def compare(self, a, b, operation):
@@ -662,7 +691,7 @@ class FloatComparison(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)  
     FUNCTION = "compare"
 
     def compare(self, a, b, operation, tolerance=0.0):
@@ -707,7 +736,7 @@ class StringComparison(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "compare"
 
     def compare(self, a, b, operation, case_sensitive):
@@ -750,7 +779,7 @@ class BooleanLogic(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "logic_operation"
 
     def logic_operation(self, a, b, operation):
@@ -785,7 +814,7 @@ class BooleanUnary(BooleanNode):
         }
 
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("BOOLEAN",)
     FUNCTION = "unary_operation"
 
     def unary_operation(self, value, operation):
@@ -800,8 +829,9 @@ MATH_NODE_CLASS_MAPPINGS = {
     "PreciseFloatInput": PreciseFloatInput,
     "BooleanInput": BooleanInput,
     "StringInput": StringInput,
-    "IntToType": IntToType,
-    "FloatToType": FloatToType,
+    "ToInt": ToInt,
+    "ToFloat": ToFloat,
+    "ToString": ToString,
     "ToBool": ToBool,
     "BasicMath": BasicMath,
     "IntMath": IntMath,
@@ -810,7 +840,7 @@ MATH_NODE_CLASS_MAPPINGS = {
     "NumberRound": NumberRound,
     "NumberClamp": NumberClamp,
     "NumberLerp": NumberLerp,
-    "NumberRange": NumberRange,
+    "NumberInRange": NumberInRange,
     "NumberComparison": NumberComparison,
     "IntegerComparison": IntegerComparison,
     "FloatComparison": FloatComparison,
@@ -825,8 +855,9 @@ MATH_NODE_DISPLAY_NAME_MAPPINGS = {
     "PreciseFloatInput": f"Precise Float {NODE_POSTFIX}",
     "BooleanInput": f"Boolean {NODE_POSTFIX}",
     "StringInput": f"String {NODE_POSTFIX}",
-    "IntToType": f"Int to Type {NODE_POSTFIX}",
-    "FloatToType": f"Float to Type {NODE_POSTFIX}",
+    "ToInt": f"To Int {NODE_POSTFIX}",
+    "ToFloat": f"To Float {NODE_POSTFIX}",
+    "ToString": f"To String {NODE_POSTFIX}",
     "ToBool": f"To Bool {NODE_POSTFIX}",
     "BasicMath": f"Basic Math {NODE_POSTFIX}",
     "IntMath": f"Int Math {NODE_POSTFIX}",
@@ -835,7 +866,7 @@ MATH_NODE_DISPLAY_NAME_MAPPINGS = {
     "NumberRound": f"Number Round {NODE_POSTFIX}",
     "NumberClamp": f"Number Clamp {NODE_POSTFIX}",
     "NumberLerp": f"Number Lerp {NODE_POSTFIX}",
-    "NumberRange": f"Number Range {NODE_POSTFIX}",
+    "NumberInRange": f"Number In Range {NODE_POSTFIX}",
     "NumberComparison": f"Number Comparison {NODE_POSTFIX}",
     "IntegerComparison": f"Integer Comparison {NODE_POSTFIX}",
     "FloatComparison": f"Float Comparison {NODE_POSTFIX}",

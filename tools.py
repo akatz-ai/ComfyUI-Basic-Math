@@ -1,4 +1,18 @@
 
+class AnyType(str):
+    """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+class ByPassTypeTuple(tuple):
+    """A special class that will return additional "AnyType" strings beyond defined values.
+    Credit to Trung0246
+    """
+    def __getitem__(self, index):
+        if index > len(self) - 1:
+            return AnyType("*")
+        return super().__getitem__(index)
+
 def MakeSmartType(t):
     if isinstance(t, str):
         return SmartType(t)
@@ -62,4 +76,7 @@ def VariantSupport():
             setattr(cls, "VALIDATE_INPUTS", validate_inputs)
         return cls
     return decorator
+
+# Create a global any_type instance for use in nodes
+any_type = AnyType("*")
 
